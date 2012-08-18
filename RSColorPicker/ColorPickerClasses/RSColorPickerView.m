@@ -126,7 +126,6 @@ void HSVFromPixel(BMPixel pixel, CGFloat* h, CGFloat* s, CGFloat* v) {
 
 -(void)setBrightness:(CGFloat)bright {
 	brightness = bright;
-	bitmapNeedsUpdate = YES;
 	[self setNeedsDisplay];
 	[delegate colorPickerDidChangeSelection:self];
 }
@@ -152,17 +151,13 @@ void HSVFromPixel(BMPixel pixel, CGFloat* h, CGFloat* s, CGFloat* v) {
 			relY = radius - y;
 			
 			CGFloat r_distance = sqrt((relX * relX)+(relY * relY));
-			if (fabsf(r_distance) > radius && cropToCircle == YES) {
-				[rep setPixel:BMPixelMake(0.0, 0.0, 0.0, 0.0) atPoint:BMPointMake(x, y)];
-				continue;
-			}
 			r_distance = fmin(r_distance, radius);
 			
 			CGFloat angle = atan2(relY, relX);
 			if (angle < 0.0) { angle = (2.0 * M_PI)+angle; }
 			
 			CGFloat perc_angle = angle / (2.0 * M_PI);
-			BMPixel thisPixel = pixelFromHSV(perc_angle, r_distance/radius, self.brightness);
+			BMPixel thisPixel = pixelFromHSV(perc_angle, r_distance/radius, 1.0);
 			[rep setPixel:thisPixel atPoint:BMPointMake(x, y)];
 		}
 	}
@@ -175,13 +170,26 @@ void HSVFromPixel(BMPixel pixel, CGFloat* h, CGFloat* s, CGFloat* v) {
 - (void)drawRect:(CGRect)rect
 {
 	[self genBitmap];
-	[[rep image] drawInRect:rect];
+    
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
+    if (cropToCircle) {
+        CGContextAddEllipseInRect(ctx, self.bounds);
+        CGContextClip(ctx);
+    }
+    CGContextSetFillColorWithColor(ctx, [UIColor blackColor].CGColor);
+    CGContextFillRect(ctx, self.bounds);
+    [[rep image] drawInRect:self.bounds blendMode:kCGBlendModeNormal alpha:brightness];
 }
 
 
 -(UIColor*)selectionColor {
     [self genBitmap];
-	return UIColorFromBMPixel([rep getPixelAtPoint:BMPointFromPoint(selection)]);
+	
+    BMPixel pixel = [rep getPixelAtPoint:BMPointFromPoint(selection)];
+    pixel.red *= brightness;
+    pixel.green *= brightness;
+    pixel.blue *= brightness;
+    return UIColorFromBMPixel(pixel);
 }
 -(CGPoint)selection {
 	return selection;
