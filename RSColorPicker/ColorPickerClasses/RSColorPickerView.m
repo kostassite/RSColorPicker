@@ -273,25 +273,28 @@ void HSVFromPixel(BMPixel pixel, CGFloat* h, CGFloat* s, CGFloat* v) {
 		//Constrain point to inside of bounds
 		touchPoint.x = MIN(CGRectGetMaxX(self.bounds)-1, touchPoint.x);
 		touchPoint.x = MAX(CGRectGetMinX(self.bounds),   touchPoint.x);
-		touchPoint.y = MIN(CGRectGetMaxX(self.bounds)-1, touchPoint.y);
-		touchPoint.y = MAX(CGRectGetMinX(self.bounds),   touchPoint.y);
+		touchPoint.y = MIN(CGRectGetMaxY(self.bounds)-1, touchPoint.y);
+		touchPoint.y = MAX(CGRectGetMinY(self.bounds),   touchPoint.y);
 		return touchPoint;
 	}
 	
-	BMPixel pixel = BMPixelMake(0.0, 0.0, 0.0, 0.0);
-	if (IS_INSIDE(touchPoint)) {
-		pixel = [rep getPixelAtPoint:BMPointFromPoint(touchPoint)];
-	}
-	
-	if (pixel.alpha > 0.0) {
-		return touchPoint;
-	}
+//	BMPixel pixel = BMPixelMake(0.0, 0.0, 0.0, 0.0);
+//	if (IS_INSIDE(touchPoint)) {
+//		pixel = [rep getPixelAtPoint:BMPointFromPoint(touchPoint)];
+//	}
+//	
+//	if (pixel.alpha > 0.0) {
+//		return touchPoint;
+//	}
 	
 	// the point is invalid, so we will put it in a valid location.
 	CGFloat radius = (self.frame.size.width / 2.0);
 	CGFloat relX = touchPoint.x - radius;
 	CGFloat relY = radius - touchPoint.y;
 	CGFloat angle = atan2(relY, relX);
+    CGFloat r_distance = sqrt((relX * relX)+(relY * relY));
+    
+    if (r_distance <= radius) return touchPoint;
 	
 	if (angle < 0) { angle = (2.0 * M_PI) + angle; }
 	relX = INNER_P(cos(angle) * radius);
@@ -314,9 +317,8 @@ void HSVFromPixel(BMPixel pixel, CGFloat* h, CGFloat* s, CGFloat* v) {
 }
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
-   
    //Lazily load loupeLayer
-    if (!loupeLayer){
+    if (!loupeLayer) {
         loupeLayer = [[BGRSLoupeLayer layer] retain];
     }
     
